@@ -246,7 +246,7 @@ if __name__ == '__main__':
     try:
         os.makedirs(config['results_path'])
     except:
-        pass
+        print('Folder already exists.')
     # Sectors. 
     with open('sectors.json') as jfile:
         sectors_dict = json.load(jfile)
