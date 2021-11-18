@@ -247,7 +247,7 @@ if __name__ == '__main__':
         os.makedirs(config['results_path'])
     except:
         pass
-    # Sectors.
+    # Sectors. 
     with open('sectors.json') as jfile:
         sectors_dict = json.load(jfile)
 
