@@ -1,0 +1,28 @@
+{
+    "simulation_name": "Iter_2",
+    "results_path": "results/",
+    "strategy_parameters": {
+        "train_period": 300,
+        "test_period": 150,
+        "mean_period": 45,
+        "std_factor_1": 2,
+        "std_factor_2": 3
+    },
+    "date_parameters": {
+        "start_date": "2010-01-01",
+        "end_date": "2021-11-12"
+    },
+    "capital_parameters": {
+        "capital_per_trade": 10000,
+        "total_capital": 100000000
+    },
+    "database_parameters": {
+        "mongo": {
+            "data_db": "Data",
+            "strategy_db": "Stat_Arb",
+            "data_collection": "SP500",
+            "strategy_collection": "",
+            "support_collection": "Support"
+        }
+    }
+}
