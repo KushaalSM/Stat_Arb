@@ -247,7 +247,7 @@ if __name__ == '__main__':
         os.makedirs(config['results_path'])
     except:
         pass
-    # Sectors
+    # Sectors.
     with open('sectors.json') as jfile:
         sectors_dict = json.load(jfile)
 
@@ -262,9 +262,10 @@ if __name__ == '__main__':
     }
     results_calculator = ResultsCalculator(config=results_config)
 
-    # Calculate sector wise results
+    # Calculate sector wise results.
     for sector, trades in sector_trades.items():
         results_calculator.calculate_results(trades, config['results_path'], sector)
 
+    # Generate the results for all sectors combined.
     combined_sector_trades = sum(list(sector_trades.values()), [])
     results_calculator.calculate_results(combined_sector_trades, config['results_path'], "Combined")
