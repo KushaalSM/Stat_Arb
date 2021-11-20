@@ -1,9 +1,10 @@
 {
-    "simulation_name": "Iter_2",
+    "simulation_name": "Iter_3_Inf_Tech",
     "results_path": "results/",
+    "sectors": ["Information Technology"],
     "strategy_parameters": {
-        "train_period": 300,
-        "test_period": 150,
+        "train_period": 150,
+        "test_period": 100,
         "mean_period": 45,
         "std_factor_1": 2,
         "std_factor_2": 3

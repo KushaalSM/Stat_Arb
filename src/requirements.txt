@@ -1,0 +1,5 @@
+numpy==1.20.1
+pandas==1.2.4
+statsmodels=0.12.2
+pymongo=3.12.1
+yahoo-finance=0.1.66

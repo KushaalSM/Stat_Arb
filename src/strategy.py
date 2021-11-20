@@ -251,6 +251,9 @@ if __name__ == '__main__':
     with open('sectors.json') as jfile:
         sectors_dict = json.load(jfile)
 
+    if not config['sectors'] == []:
+        sectors_dict = {key: val for key, val in sectors_dict.items() if key in config['sectors']}
+
     pool = Pool(6)
     sectors_res = {sector: pool.apply_async(run_strategy_for_sector, args=(config, sector, stock_list)) for sector, stock_list in sectors_dict.items()}
     sector_trades = {key: res.get() for key, res in sectors_res.items()}
