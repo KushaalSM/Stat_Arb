@@ -1,8 +1,8 @@
 # Stat_Arb
 
 ## Disclaimer : 
-a) '*' before a functionality of a module implies that functionality is in a state of development and isn't frozen. I will be trying out different ideas and implementations for these starred functionalities.
-b) '**' before a functionality of a module implies that functionality isn't completed yet. Some aspects of the functionality described are yet to be implemented.
+    a) '*' before a functionality of a module implies that functionality is in a state of development and isn't frozen. I will be trying out different ideas and implementations for these starred functionalities.
+    b) '**' before a functionality of a module implies that functionality isn't completed yet. Some aspects of the functionality described are yet to be implemented.
 
 ## Description
 This is a backtest engine for a Statistical Arbitrage strategy. In particular, I am developing this for the constituents of S&P 500.
@@ -16,14 +16,14 @@ This module involves -
 2) strategy : 
 This module involves - 
     i) Calculating the hedge ratio for each train-test period.
-    \* ii) Performing Augmented Dickey Fuller test to check for stationarity of the price spread.
-    \* iii) Calculate the buy-sell signals based on a rolling mean and rolling standard deviations.
+    ii) Performing Augmented Dickey Fuller test to check for stationarity of the price spread.
+    iii) Calculate the buy-sell signals based on a rolling mean and rolling standard deviations.
     iv) Trading the signals and logging the execution information.
 
 3) results :
 This module involves - 
-    * i) Calculating the trade related metrics such as hit_rate, avg_win_to_avg_loss and so on.
-    ** ii) Calculating Capital related metrics such as return, volatility, sharpe and so on.
+    i) Calculating the trade related metrics such as hit_rate, avg_win_to_avg_loss and so on.
+    ii) Calculating Capital related metrics such as return, volatility, sharpe and so on.
 
 4) utils : 
 This is a combination of miscellaneous tools used by the other modules. The current toolbox contains - 
