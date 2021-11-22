@@ -20,12 +20,12 @@ The different modules created are -
 
 3) results : This module involves - 
     1. Calculating the trade related metrics such as hit_rate, avg_win_to_avg_loss and so on.
-    2. Calculating Capital related metrics such as return, volatility, sharpe and so on.
+    2. Calculating Capital related metrics such as return, volatility, sharpe and so on. (**)
 
 4) utils : This is a combination of miscellaneous tools used by the other modules. The current toolbox contains - 
     1. MongoInteractor : Connecting to the local mongo database, fetching data, saving trades and so on.
-    2. YahooDataFetcher : Fetching data from Yahoo Finance.
-    3. Transaction Costs : Calculating transaction costs for different asset classes.
+    2. YahooDataFetcher : Fetching data from Yahoo Finance. (*)
+    3. Transaction Costs : Calculating transaction costs for different asset classes. (*)
     4. Train_Test_Split : Creating train-test splits of the input data based on the given split parameters.
 
 
