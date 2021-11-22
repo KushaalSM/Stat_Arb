@@ -155,6 +155,7 @@ class Strategy:
                     trade_dict['Trade_Duration'] = (trade_dict['Exit_Date'] - trade_dict['Entry_Date']).total_seconds()/3600/24
                     trade_dict['Sector'] = self.sector_name
                     trade_dict['Hedge_Ratio'] = row['hedge_ratio']
+                    trade_dict['Stock_Pair'] = f"{row['underlying_1']}|{row['underlying_2']}"
                     # Update PnL
                     long_price, short_price = (row['next_open_1'], row['next_open_2']) if position == 'Long' else (row['next_open_2'], row['next_open_1'])
                     gain_till_date = (long_price - trade_dict['Long_Entry_Price']) * trade_dict['Long_Quantity'] + \

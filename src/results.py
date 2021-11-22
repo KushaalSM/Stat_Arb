@@ -59,6 +59,8 @@ class ResultsCalculator:
         trade_metrics['Max_Loss'] = trades_df['Trade_PnL'].min()
         trade_metrics['Average_Trade_Duration'] = trades_df['Trade_Duration'].mean()
         trade_metrics['Average_Trade_Return'] = trades_df['Trade_Return'].mean()
+        if 'Stock_Pair' in trades_df:
+            trade_metrics['Stock_Pairs_Traded'] = len(trades_df['Stock_Pair'].unique())
         trade_metrics_df = pd.DataFrame()
         trade_metrics_df['Metric'] = list(trade_metrics.keys())
         trade_metrics_df['Values'] = list(trade_metrics.values())
