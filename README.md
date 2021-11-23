@@ -29,4 +29,16 @@ The different modules created are -
     4. Train_Test_Split : Creating train-test splits of the input data based on the given split parameters.
 
 
-## Results of iterations tried to follow soon!
+# Results
+## Iteration 1: 
+    Sector : Information Technology
+    
+    Parameters : {
+        "train_period": 150,
+        "test_period": 100,
+        "mean_period": 45,
+        "std_factor_1": 2,
+        "std_factor_2": 3,
+        "capital_per_trade": 10000
+    }
+

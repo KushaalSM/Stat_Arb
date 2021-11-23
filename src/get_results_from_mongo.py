@@ -14,7 +14,7 @@ if __name__ == '__main__':
         'capital': 100000000
     }
 
-    simulation_name = 'Iter_2'
+    simulation_name = 'Iter_3_Inf_Tech'
     results_path = f'results/{simulation_name}'
     try:
         os.makedirs(results_path)

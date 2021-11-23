@@ -28,8 +28,22 @@ class ResultsCalculator:
         if trades_list == []:
             raise Exception("Trades List is empty")
         trades_df = pd.DataFrame(trades_list)
-        trade_metrics_df = self.get_trade_metrics(trades_df)
-        mtm_metrics_df = self.get_mtm_metrics(trades_list)
+
+        # Get Cumulative PnL and Daily MtM information along with the number of open positions on any given day.
+        mtm_metrics_df, open_positions_dict = self.get_mtm_metrics(trades_list)
+        
+        # Trade related metrics.
+        trade_metrics = self.get_trade_metrics(trades_df)
+        if not open_positions_dict == {}:
+            trade_metrics['Maximum_Open_Pairs'] = max(open_positions_dict.values())
+            trade_metrics['Average_Open_Pairs'] = sum(open_positions_dict.values()) // len(open_positions_dict)
+        else:
+            trade_metrics['Maximum_Open_Pairs'] = 0
+            trade_metrics['Average_Open_Pairs'] = 0
+
+        trade_metrics_df = pd.DataFrame()
+        trade_metrics_df['Metric'] = list(trade_metrics.keys())
+        trade_metrics_df['Values'] = list(trade_metrics.values())
 
         # Save results in a workbook.
         workbook = pd.ExcelWriter(path=f"{results_path}/Results_{name}.xlsx", engine='xlsxwriter')
@@ -61,24 +75,23 @@ class ResultsCalculator:
         trade_metrics['Average_Trade_Return'] = trades_df['Trade_Return'].mean()
         if 'Stock_Pair' in trades_df:
             trade_metrics['Stock_Pairs_Traded'] = len(trades_df['Stock_Pair'].unique())
-        trade_metrics_df = pd.DataFrame()
-        trade_metrics_df['Metric'] = list(trade_metrics.keys())
-        trade_metrics_df['Values'] = list(trade_metrics.values())
-        return trade_metrics_df
+        return trade_metrics
 
     def get_mtm_metrics(self, trades_list):
         """
         Calculates capital related metrics.
         """
         day_pnl = defaultdict(float)
+        open_position_dict = defaultdict(int)
         for trade in trades_list:
             unrealized_pnl_dict = trade['MtM_dict']
             for key, val in unrealized_pnl_dict.items():
                 day_pnl[dt.datetime.strptime(key, '%Y-%m-%d')] += val
+                open_position_dict[dt.datetime.strptime(key, '%Y-%m-%d')] += 1
         mtm_sheet = pd.DataFrame()
         mtm_sheet['Date'] = list(day_pnl.keys())
         mtm_sheet['PnL'] = list(day_pnl.values())
         mtm_sheet.sort_values(by='Date', ascending=True, inplace=True)
         mtm_sheet.reset_index(inplace=True, drop=True)
         mtm_sheet['Cumulative_PnL'] = mtm_sheet['PnL'].cumsum()
-        return mtm_sheet
+        return mtm_sheet, open_position_dict
