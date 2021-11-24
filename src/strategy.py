@@ -25,6 +25,13 @@ class Strategy:
         self.sector_name = sector
         self.mongo_interactor = None
         self.data_processor = None
+
+        # Indicator Variables
+        self.in_trade = False
+        self.position = ""
+        self.trade_dict = {}
+        self.cumulative_pnl = 0
+        self.trades_list = []
         self.create_connections()
     
     def create_connections(self):
@@ -131,75 +138,95 @@ class Strategy:
         """
         Simulates the trade execution and logs execution info.
         """
-        trades_list = []
-        trade_dict = {}
-        cumulative_pnl = 0
-        in_trade = False
-        position = "" # 'Long' or 'Short'
+        self.trades_list = []
         for _, row in data_df.iterrows():
-            if in_trade:
-                if (position == 'Long' and row['mean_breach_from_below'] == 1) or (position == 'Short' and row['mean_breach_from_above'] == 1):
+            if self.in_trade:
+                if (self.position == 'Long' and row['mean_breach_from_below'] == 1) or (self.position == 'Short' and row['mean_breach_from_above'] == 1):
                     # Exit Signal obtained.
-                    in_trade = False
-                    trade_dict['Exit_Date'] = row['next_date']
-                    trade_dict['Long_Exit_Price'], trade_dict['Short_Exit_Price'] = (row['next_open_1'], row['next_open_2']) if position == 'Long' else (row['next_open_2'], row['next_open_1'])
-                    trade_dict['Long_Points'] = trade_dict['Long_Exit_Price'] - trade_dict['Long_Entry_Price']
-                    trade_dict['Long_PnL'] = trade_dict['Long_Points'] * trade_dict['Long_Quantity']
-                    trade_dict['Short_Points'] = trade_dict['Short_Entry_Price'] - trade_dict['Short_Exit_Price']
-                    trade_dict['Short_PnL'] = trade_dict['Short_Points'] * trade_dict['Short_Quantity']
-                    trade_dict['Net_Points'] = trade_dict['Long_Points'] + trade_dict['Short_Points']
-                    transaction_costs = get_transaction_costs(trade_dict['Long_Entry_Price'], trade_dict['Long_Exit_Price'], trade_dict['Long_Quantity']) + \
-                        get_transaction_costs(trade_dict['Short_Exit_Price'], trade_dict['Short_Entry_Price'], trade_dict['Short_Quantity'])
-                    trade_dict['Trade_PnL'] = trade_dict['Long_PnL'] + trade_dict['Short_PnL'] - transaction_costs
-                    trade_dict['Trade_Return'] = 100 * trade_dict['Trade_PnL'] / capital_per_trade
-                    trade_dict['Trade_Duration'] = (trade_dict['Exit_Date'] - trade_dict['Entry_Date']).total_seconds()/3600/24
-                    trade_dict['Sector'] = self.sector_name
-                    trade_dict['Hedge_Ratio'] = row['hedge_ratio']
-                    trade_dict['Stock_Pair'] = f"{row['underlying_1']}|{row['underlying_2']}"
-                    # Update PnL
-                    long_price, short_price = (row['next_open_1'], row['next_open_2']) if position == 'Long' else (row['next_open_2'], row['next_open_1'])
-                    gain_till_date = (long_price - trade_dict['Long_Entry_Price']) * trade_dict['Long_Quantity'] + \
-                        (trade_dict['Short_Entry_Price'] - short_price) * trade_dict['Short_Quantity']
-                    trade_dict['MtM_dict'][row['next_date'].strftime('%Y-%m-%d')] = gain_till_date - cumulative_pnl
-
-                    cumulative_pnl = 0
-                    trades_list.append(trade_dict)
-                    trade_dict = {}
-                    position = ""
+                    self.process_exit_signal(row, capital_per_trade)
                 else:
-                    # Log the current mark-to-market.
-                    long_price, short_price = (row['close_1'], row['close_2']) if position == 'Long' else (row['close_2'], row['close_1'])
-                    gain_till_date = (long_price - trade_dict['Long_Entry_Price']) * trade_dict['Long_Quantity'] + \
-                        (trade_dict['Short_Entry_Price'] - short_price) * trade_dict['Short_Quantity']
-                    trade_dict['MtM_dict'][row['date'].strftime('%Y-%m-%d')] = gain_till_date - cumulative_pnl
-                    cumulative_pnl = gain_till_date
+                    # Record the current mark-to-market and the cumulative pnl.
+                    self.update_cumulative_pnl(row)
             else:
                 if row[f'lower_band_{entry}_1'] == 1:
-                    in_trade = True
-                    position = 'Long'
+                    self.in_trade = True
+                    self.position = 'Long'
                 elif row[f'upper_band_{entry}_1'] == 1:
-                    in_trade = True
-                    position = 'Short'
-                if in_trade:
+                    self.in_trade = True
+                    self.position = 'Short'
+                if self.in_trade:
                     # Entry Signal obtained.
-                    trade_dict['Position'] = position
-                    trade_dict['Entry_Date'] = row['next_date']
-                    trade_dict['Long_Stock'], trade_dict['Short_Stock'] = (row['underlying_1'], row['underlying_2']) if position == 'Long' else (row['underlying_2'], row['underlying_1']) 
-                    trade_dict['Long_Entry_Price'], trade_dict['Short_Entry_Price'] = (row['next_open_1'], row['next_open_2']) if position == 'Long' else (row['next_open_2'], row['next_open_1'])
-                    if trade_dict['Long_Entry_Price'] == 0 or trade_dict['Short_Entry_Price'] == 0:
-                        in_trade = False
-                        position = ""
-                        trade_dict = {}
-                        cumulative_pnl = 0
-                        continue
-                    # Split the capital based on the hedge_ratio.
-                    capital_split_factor = abs(row['hedge_ratio']) + 1
-                    capital_stock_1 = capital_per_trade / capital_split_factor
-                    capital_stock_2 = capital_per_trade - capital_stock_1
-                    trade_dict['Long_Quantity'] = floor((capital_stock_1 if position == 'Long' else capital_stock_2) / trade_dict['Long_Entry_Price'])
-                    trade_dict['Short_Quantity'] = floor((capital_stock_1 if position == 'Short' else capital_stock_2) / trade_dict['Short_Entry_Price'])
-                    trade_dict['MtM_dict'] = {}
-        return trades_list
+                    self.process_entry_signal(row, capital_per_trade)
+        
+        # if self.in_trade:
+        #     # If open position exists at the end of the backtest, exit that position.
+        #     self.process_exit_signal(row, capital_per_trade)
+
+        # Reset all indicator variables.
+        self.reset_indicators()
+        return self.trades_list
+    
+    def update_cumulative_pnl(self, row):
+        long_price, short_price = (row['close_1'], row['close_2']) if self.position == 'Long' else (row['close_2'], row['close_1'])
+        gain_till_date = (long_price - self.trade_dict['Long_Entry_Price']) * self.trade_dict['Long_Quantity'] + \
+            (self.trade_dict['Short_Entry_Price'] - short_price) * self.trade_dict['Short_Quantity']
+        self.trade_dict['MtM_dict'][row['date'].strftime('%Y-%m-%d')] = gain_till_date - self.cumulative_pnl
+        self.cumulative_pnl = gain_till_date
+        return
+
+    def process_entry_signal(self, row, capital_per_trade):
+        trade_dict = {}
+        trade_dict['Position'] = self.position
+        trade_dict['Entry_Date'] = row['next_date']
+        trade_dict['Long_Stock'], trade_dict['Short_Stock'] = (row['underlying_1'], row['underlying_2']) if self.position == 'Long' else (row['underlying_2'], row['underlying_1']) 
+        trade_dict['Long_Entry_Price'], trade_dict['Short_Entry_Price'] = (row['next_open_1'], row['next_open_2']) if self.position == 'Long' else (row['next_open_2'], row['next_open_1'])
+        if not (trade_dict['Long_Entry_Price'] > 0 and trade_dict['Short_Entry_Price'] > 0):
+            self.in_trade = False
+            self.position = ""
+            self.trade_dict = {}
+            self.cumulative_pnl = 0
+        # Split the capital based on the hedge_ratio.
+        capital_split_factor = abs(row['hedge_ratio']) + 1
+        capital_stock_1 = capital_per_trade / capital_split_factor
+        capital_stock_2 = capital_per_trade - capital_stock_1
+        trade_dict['Long_Quantity'] = floor((capital_stock_1 if self.position == 'Long' else capital_stock_2) / trade_dict['Long_Entry_Price'])
+        trade_dict['Short_Quantity'] = floor((capital_stock_1 if self.position == 'Short' else capital_stock_2) / trade_dict['Short_Entry_Price'])
+        trade_dict['MtM_dict'] = {}
+        self.trade_dict = trade_dict
+        return
+
+    def process_exit_signal(self, row, capital_per_trade):
+        self.trade_dict['Exit_Date'] = row['next_date']
+        self.trade_dict['Long_Exit_Price'], self.trade_dict['Short_Exit_Price'] = (row['next_open_1'], row['next_open_2']) if self.position == 'Long' else (row['next_open_2'], row['next_open_1'])
+        self.trade_dict['Long_Points'] = self.trade_dict['Long_Exit_Price'] - self.trade_dict['Long_Entry_Price']
+        self.trade_dict['Long_PnL'] = self.trade_dict['Long_Points'] * self.trade_dict['Long_Quantity']
+        self.trade_dict['Short_Points'] = self.trade_dict['Short_Entry_Price'] - self.trade_dict['Short_Exit_Price']
+        self.trade_dict['Short_PnL'] = self.trade_dict['Short_Points'] * self.trade_dict['Short_Quantity']
+        self.trade_dict['Net_Points'] = self.trade_dict['Long_Points'] + self.trade_dict['Short_Points']
+        transaction_costs = get_transaction_costs(self.trade_dict['Long_Entry_Price'], self.trade_dict['Long_Exit_Price'], self.trade_dict['Long_Quantity']) + \
+            get_transaction_costs(self.trade_dict['Short_Exit_Price'], self.trade_dict['Short_Entry_Price'], self.trade_dict['Short_Quantity'])
+        self.trade_dict['Trade_PnL'] = self.trade_dict['Long_PnL'] + self.trade_dict['Short_PnL'] - transaction_costs
+        self.trade_dict['Trade_Return'] = 100 * self.trade_dict['Trade_PnL'] / capital_per_trade
+        self.trade_dict['Trade_Duration'] = (self.trade_dict['Exit_Date'] - self.trade_dict['Entry_Date']).total_seconds()/3600/24
+        self.trade_dict['Sector'] = self.sector_name
+        self.trade_dict['Hedge_Ratio'] = row['hedge_ratio']
+        self.trade_dict['Stock_Pair'] = f"{row['underlying_1']}|{row['underlying_2']}"
+        
+        # Update PnL.
+        self.update_cumulative_pnl(row)
+
+        self.trades_list.append(self.trade_dict)
+        
+        # Reset the indicator variables.
+        self.reset_indicators()
+        return
+    
+    def reset_indicators(self):
+        self.in_trade = False
+        self.position = ""
+        self.cumulative_pnl = 0
+        self.trade_dict = {}
+        return
 
     def trade_sector(self):
         """
@@ -216,7 +243,8 @@ class Strategy:
         capital_per_trade = self.config['capital_parameters']['capital_per_trade']
         for stock_pair in stock_combinations:
             stock_1, stock_2 = stock_pair
-            complete_trades_list.extend(self.trade_pairs(stock_1, stock_2, train_period, test_period, mean_period, std_factor_1, std_factor_2, capital_per_trade))
+            stock_pair_trades = self.trade_pairs(stock_1, stock_2, train_period, test_period, mean_period, std_factor_1, std_factor_2, capital_per_trade)
+            complete_trades_list.extend(stock_pair_trades)
             print(stock_pair)
         self.destroy_connections()
         return complete_trades_list

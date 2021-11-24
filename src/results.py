@@ -59,18 +59,18 @@ class ResultsCalculator:
         """
         trade_metrics = {}
         trade_metrics['Trades'] = len(trades_df)
-        trade_metrics['Winners'] = len(trades_df[trades_df['Trade_PnL'] > 0])
-        trade_metrics['Losers'] = len(trades_df[trades_df['Trade_PnL'] <= 0])
+        trade_metrics['Winners'] = len(trades_df[trades_df['Trade_Return'] > 0])
+        trade_metrics['Losers'] = len(trades_df[trades_df['Trade_Return'] <= 0])
         trade_metrics['Hit_Rate'] = round(trade_metrics['Winners'] / trade_metrics['Trades'], 3)
         if not trade_metrics['Losers'] == 0:
             trade_metrics['Win_Loss_Rate'] = round(trade_metrics['Winners'] / trade_metrics['Losers'], 3)
-            trade_metrics['Average_Win_to_Average_Loss'] = abs(round(trades_df[trades_df['Trade_PnL'] > 0]['Trade_PnL'].mean() / \
-                trades_df[trades_df['Trade_PnL'] <= 0]['Trade_PnL'].mean(), 3))
+            trade_metrics['Average_Win_to_Average_Loss'] = abs(round(trades_df[trades_df['Trade_Return'] > 0]['Trade_Return'].mean() / \
+                trades_df[trades_df['Trade_Return'] <= 0]['Trade_Return'].mean(), 3))
         else:
             trade_metrics['Win_Loss_Rate'] = 'Invalid Metric'
             trade_metrics['Average_Win_to_Average_Loss'] = 'Invalid Metric'
-        trade_metrics['Max_Profit'] = trades_df['Trade_PnL'].max()
-        trade_metrics['Max_Loss'] = trades_df['Trade_PnL'].min()
+        trade_metrics['Max_Profit'] = trades_df['Trade_Return'].max()
+        trade_metrics['Max_Loss'] = trades_df['Trade_Return'].min()
         trade_metrics['Average_Trade_Duration'] = trades_df['Trade_Duration'].mean()
         trade_metrics['Average_Trade_Return'] = trades_df['Trade_Return'].mean()
         if 'Stock_Pair' in trades_df:
