@@ -43,12 +43,12 @@ class Strategy:
         self.data_processor = DataProcessor(self.mongo_interactor)
         return
 
-    def fit_regression_model(self, combined_stock_df):
+    def fit_regression_model(self, combined_stock_df, train_split_idx):
         """
         Fits a regression module and calculates the price spread using the hedge ratio (coefficient estimated by the regression model).
         """
-        X = combined_stock_df['close_2']
-        Y = combined_stock_df['close_1']
+        X = combined_stock_df[:train_split_idx]['close_2']
+        Y = combined_stock_df[:train_split_idx]['close_1']
         X_1 = sm.add_constant(X)
         regression_model = OLS(Y, X_1)
         model_results = regression_model.fit()
@@ -81,6 +81,7 @@ class Strategy:
         data['std'] = data['price_spread'].rolling(window=mean_period).std()
         data['upper_band'] = data['mean'] + sd_factor_1 * data['std']
         data['lower_band'] = data['mean'] - sd_factor_1 * data['std']
+
         # Higher band can be used as a level of doubling down or stop loss. Yet to be tested.
         data['upper_band_2'] = data['mean'] + sd_factor_2 * data['std']
         data['lower_band_2'] = data['mean'] - sd_factor_2 * data['std']
@@ -121,7 +122,7 @@ class Strategy:
         all_trades_list = []
         for stock_df in stock_df_list:
             # Fit the regression model for the train data
-            stock_df = self.fit_regression_model(stock_df)
+            stock_df = self.fit_regression_model(stock_df, train_split_idx=train_period)
             if self.perform_adfuller_test(stock_df):
                 # Augmented Dickey Fuller test passed.
                 stock_df = self.calculate_signals(stock_df, mean_period, std_factor_1, std_factor_2)
@@ -181,10 +182,9 @@ class Strategy:
         trade_dict['Long_Stock'], trade_dict['Short_Stock'] = (row['underlying_1'], row['underlying_2']) if self.position == 'Long' else (row['underlying_2'], row['underlying_1']) 
         trade_dict['Long_Entry_Price'], trade_dict['Short_Entry_Price'] = (row['next_open_1'], row['next_open_2']) if self.position == 'Long' else (row['next_open_2'], row['next_open_1'])
         if not (trade_dict['Long_Entry_Price'] > 0 and trade_dict['Short_Entry_Price'] > 0):
-            self.in_trade = False
-            self.position = ""
-            self.trade_dict = {}
-            self.cumulative_pnl = 0
+            # Issue in the data.
+            self.reset_indicators()
+            return
         # Split the capital based on the hedge_ratio.
         capital_split_factor = abs(row['hedge_ratio']) + 1
         capital_stock_1 = capital_per_trade / capital_split_factor
