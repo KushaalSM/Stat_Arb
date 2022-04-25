@@ -13,6 +13,9 @@ class DataProcessor:
         self.mongo_interactor = mongo_interactor
 
     def perform_date_matching(self, df_1, df_2):
+        """
+        This function matches the dates in the 2 dataframes. Dates present in one and absent in the other dataframe are omitted.
+        """
         dates_1, dates_2 = df_1['date'], df_2['date']
         common_dates = list(set.intersection(set(dates_1), set(dates_2)))
         df_1 = df_1[df_1['date'].isin(common_dates)]
@@ -22,6 +25,12 @@ class DataProcessor:
         return df_1, df_2
 
     def get_data(self, stock_1, stock_2, start_date=None, end_date=None):
+        """
+        This function - 
+        1) Fetches data for the 2 stocks from MongoDB.
+        2) Performs date matching.
+        3) Creates a new single dataframe with relevant data of both the stocks.
+        """
         stock_1_data = self.mongo_interactor.fetch_data(stock_1, start_date, end_date)
         stock_2_data = self.mongo_interactor.fetch_data(stock_2, start_date, end_date)
         stock_1_data, stock_2_data = self.perform_date_matching(stock_1_data, stock_2_data)

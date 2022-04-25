@@ -72,7 +72,7 @@ class YahooDataFetcher:
         data = yf.download(tickers=stock_name, start=start_date, end=end_date)
         return data
 
-def create_train_test_split( combined_stock_df, train_period, test_period):
+def create_train_test_split(combined_stock_df, train_period, test_period):
     """
     Module to create train-test splits based on the train_period and test_period parameter.
     """

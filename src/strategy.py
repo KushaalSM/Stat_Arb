@@ -45,7 +45,7 @@ class Strategy:
 
     def fit_regression_model(self, combined_stock_df, train_split_idx):
         """
-        Fits a regression module and calculates the price spread using the hedge ratio (coefficient estimated by the regression model).
+        Fits a regression model and calculates the price spread using the hedge ratio (coefficient estimated by the regression model).
         """
         X = combined_stock_df[:train_split_idx]['close_2']
         Y = combined_stock_df[:train_split_idx]['close_1']
@@ -53,7 +53,7 @@ class Strategy:
         regression_model = OLS(Y, X_1)
         model_results = regression_model.fit()
         coefficient = model_results.params.values[1]
-        combined_stock_df['price_spread'] = Y - coefficient * X
+        combined_stock_df['price_spread'] = combined_stock_df['close_1'] - coefficient * combined_stock_df['close_2']
         combined_stock_df['hedge_ratio'] = coefficient
         return combined_stock_df
 
@@ -70,7 +70,7 @@ class Strategy:
         Validates the results of the Augmented Dickey Fuller test and gives the go ahead for trading if the test is successful (i.e. price spread is stationary).
         """
     #     return adf_test_result[1] < 0.05 and (adf_test_result[0] < min(adf_test_result[4].values()))
-        return adf_test_result[1] < 0.05
+        return adf_test_result[1] < 0.05 and adf_test_result[0] <= adf_test_result[4]['5%']
     
     def calculate_signals(self, data, mean_period, sd_factor_1, sd_factor_2):
         """
@@ -123,6 +123,7 @@ class Strategy:
         for stock_df in stock_df_list:
             # Fit the regression model for the train data
             stock_df = self.fit_regression_model(stock_df, train_split_idx=train_period)
+            # print(stock_df)
             if self.perform_adfuller_test(stock_df):
                 # Augmented Dickey Fuller test passed.
                 stock_df = self.calculate_signals(stock_df, mean_period, std_factor_1, std_factor_2)
@@ -276,12 +277,15 @@ if __name__ == '__main__':
         os.makedirs(config['results_path'])
     except:
         print('Folder already exists.')
+
     # Sectors. 
     with open('sectors.json') as jfile:
         sectors_dict = json.load(jfile)
 
     if not config['sectors'] == []:
         sectors_dict = {key: val for key, val in sectors_dict.items() if key in config['sectors']}
+    else:
+        raise Exception("Sectors dictionary is empty.")
 
     pool = Pool(6)
     sectors_res = {sector: pool.apply_async(run_strategy_for_sector, args=(config, sector, stock_list)) for sector, stock_list in sectors_dict.items()}
@@ -301,3 +305,4 @@ if __name__ == '__main__':
     # Generate the results for all sectors combined.
     combined_sector_trades = sum(list(sector_trades.values()), [])
     results_calculator.calculate_results(combined_sector_trades, config['results_path'], "Combined")
+
