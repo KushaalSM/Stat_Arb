@@ -69,8 +69,8 @@ class ResultsCalculator:
         else:
             trade_metrics['Win_Loss_Rate'] = 'Invalid Metric'
             trade_metrics['Average_Win_to_Average_Loss'] = 'Invalid Metric'
-        trade_metrics['Max_Profit'] = trades_df['Trade_Return'].max()
-        trade_metrics['Max_Loss'] = trades_df['Trade_Return'].min()
+        trade_metrics['Max_Profit_%'] = trades_df['Trade_Return'].max()
+        trade_metrics['Max_Loss_%'] = trades_df['Trade_Return'].min()
         trade_metrics['Average_Trade_Duration'] = trades_df['Trade_Duration'].mean()
         trade_metrics['Average_Trade_Return'] = trades_df['Trade_Return'].mean()
         if 'Stock_Pair' in trades_df:

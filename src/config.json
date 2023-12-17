@@ -1,8 +1,8 @@
 {
-    "simulation_name": "Iter_6_Inf_Tech",
+    "simulation_name": "All_Till_2023",
     "results_path": "results/",
     "sectors": [
-        "Information Technology"
+        "All"
     ],
     "strategy_parameters": {
         "train_period": 150,
@@ -13,7 +13,7 @@
     },
     "date_parameters": {
         "start_date": "2010-01-01",
-        "end_date": "2021-11-12"
+        "end_date": "2023-11-30"
     },
     "capital_parameters": {
         "capital_per_trade": 10000,
@@ -24,7 +24,7 @@
             "data_db": "Data",
             "strategy_db": "Stat_Arb",
             "data_collection": "SP500",
-            "strategy_collection": "",
+            "strategy_collection": "Test",
             "support_collection": "Support"
         }
     }

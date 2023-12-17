@@ -2,6 +2,7 @@ import pymongo
 import datetime as dt
 import pandas as pd
 import yfinance as yf
+import json
 
 class MongoInteractor:
     """
@@ -21,11 +22,12 @@ class MongoInteractor:
         Connects to the mongo client and the relevant databases.
         """
         self.client = pymongo.MongoClient()
-        self.data_db = self.client[self.config['data_db']]
-        self.strategy_db = self.client[self.config['strategy_db']]
-        self.data_collection = self.data_db[self.config['data_collection']]
-        self.support_collection = self.data_db[self.config['support_collection']]
-        self.strategy_collection = self.strategy_db[self.config['strategy_collection']]
+        mongo_params = self.config
+        self.data_db = self.client[mongo_params['data_db']]
+        self.strategy_db = self.client[mongo_params['strategy_db']]
+        self.data_collection = self.data_db[mongo_params['data_collection']]
+        self.support_collection = self.data_db[mongo_params['support_collection']]
+        self.strategy_collection = self.strategy_db[mongo_params['strategy_collection']]
         return
 
     def destroy_connections(self):
@@ -61,6 +63,13 @@ class MongoInteractor:
             self.strategy_collection.insert_one({'_id': doc_name, 'trades': trades_list})
         return
 
+    def save_data(self, data_list):
+        if not data_list == []:
+            self.data_collection.insert_many(data_list)
+        else:
+            raise Exception("data_list is empty.")
+        return
+
 class YahooDataFetcher:
     """
     Module to fetch data from Yahoo Finance.
@@ -68,9 +77,39 @@ class YahooDataFetcher:
     def __init__(self) -> None:
         pass
 
-    def fetch_data(self, stock_name, start_date=None, end_date=None):
-        data = yf.download(tickers=stock_name, start=start_date, end=end_date)
+    def fetch_data(self, stock_name, start_date=None, end_date=None, period='1D'):
+        data = yf.download(tickers=stock_name, start=start_date, end=end_date, period=period)
         return data
+
+    def format_data(self, stock_name, sector, data):
+        if data.empty:
+            raise Exception("data is empty")
+        data_list = []
+        for idx, row in data.iterrows():
+            dict_ = {}
+            dict_["date"] = idx
+            dict_["instrument_name"] = f"EQTSTK_{stock_name}_XXXXXXXXX_XX_0"
+            dict_["underlying"] = stock_name
+            dict_["asset_type"] = "EQT"
+            dict_["security_type"] = "STK"
+            dict_["expiry"] = dt.datetime(1970, 1, 1)
+            dict_["strike"] = 0
+            dict_["open"] = row["Open"]
+            dict_["high"] = row["High"]
+            dict_["low"] = row["Low"]
+            dict_["close"] = row["Close"]
+            dict_["adj_close"] = row["Adj Close"]
+            dict_["volume"] = row["Volume"]
+            dict_["freq"] = "1D"
+            dict_["sector"] = sector
+            dict_["name"] = stock_name
+            dict_["_id"] = f"EQTSTK_{stock_name}_XXXXXXXXX_XX_0|1D|{str(idx).split(' ')[0]}"
+            data_list.append(dict_)
+        return data_list
+
+    # def push_data_to_mongo(self, data_list):
+    #     mongo_db = MongoInteractor()
+    #     return
 
 def create_train_test_split(combined_stock_df, train_period, test_period):
     """
@@ -88,3 +127,34 @@ def create_train_test_split(combined_stock_df, train_period, test_period):
 
 def get_transaction_costs(buy_price, sell_price, quantity):
     return 0
+
+def update_database(config_dict, sectors_dict, start_date, end_date):
+    yahoo_data = YahooDataFetcher()
+    mongo_db = MongoInteractor(config_dict)
+    mongo_db.create_connections()
+    issue_list = []
+    for sector, stock_list in sectors_dict.items():
+        for stock in stock_list:
+            try:
+                data = yahoo_data.fetch_data(stock, start_date, end_date, period='1D')
+                data_list = yahoo_data.format_data(stock, sector, data)
+                mongo_db.save_data(data_list)
+                print(f"Done with : {sector} | {stock}")
+            except Exception as error:
+                print(error, f"{sector} | {stock}")
+                issue_list.append((sector, stock))
+    mongo_db.destroy_connections()
+    print(issue_list)
+    return
+
+if __name__ == "__main__":
+    with open('config.json') as jfile:
+        config_dict = json.load(jfile)
+    
+    with open('sectors.json') as jfile:
+        sectors_dict = json.load(jfile)
+
+    start_date = "2021-11-13"
+    end_date = "2023-12-01"
+
+    update_database(config_dict, sectors_dict, start_date, end_date)

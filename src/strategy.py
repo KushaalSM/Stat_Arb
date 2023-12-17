@@ -61,8 +61,7 @@ class Strategy:
         """
         Performs the Augmented Dickey Fuller test on the price spread.
         """
-        price_spread = combined_stock_df['price_spread']
-        adf_test_result = adfuller(price_spread)
+        adf_test_result = adfuller(combined_stock_df['price_spread'])
         return self.analyze_adf_test(adf_test_result)
 
     def analyze_adf_test(self, adf_test_result):
@@ -283,10 +282,14 @@ if __name__ == '__main__':
         sectors_dict = json.load(jfile)
 
     if not config['sectors'] == []:
-        sectors_dict = {key: val for key, val in sectors_dict.items() if key in config['sectors']}
+        if config['sectors'] == ['All']:
+            sectors_dict = {key: val for key, val in sectors_dict.items()}
+        else:   
+            sectors_dict = {key: val for key, val in sectors_dict.items() if key in config['sectors']}
     else:
         raise Exception("Sectors dictionary is empty.")
 
+    # print(sectors_dict)
     pool = Pool(6)
     sectors_res = {sector: pool.apply_async(run_strategy_for_sector, args=(config, sector, stock_list)) for sector, stock_list in sectors_dict.items()}
     sector_trades = {key: res.get() for key, res in sectors_res.items()}
