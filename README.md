@@ -43,18 +43,18 @@ The different modules created are -
     }
 
     Trade_Metrics : {
-        "Trades": 9522,
-        "Winners": 7801,
-        "Losers": 1721,
-        "Hit_Rate": 0.819,
-        "Win_Loss_Rate": 4.533,
-        "Average_Win_to_Average_Loss": 1.456,
+        "Trades": 10985,
+        "Winners": 9032,
+        "Losers": 1953,
+        "Hit_Rate": 0.822,
+        "Win_Loss_Rate": 4.625,
+        "Average_Win_to_Average_Loss": 1.384,
         "Max_%_Profit": 65.098,
         "Max_%_Loss": -33.6,
-        "Average_Trade_Duration": 19.394,
-        "Average_Trade_Return": 2.365,
-        "Stock_Pairs_Traded": 2140,
-        "Maximum_Open_Pairs": 293,
-        "Average_Open_Pairs": 46
+        "Average_Trade_Duration": 20.1,
+        "Average_Trade_Return": 2.49,
+        "Stock_Pairs_Traded": 2285,
+        "Maximum_Open_Pairs": 199,
+        "Average_Open_Pairs": 47
     }
 
